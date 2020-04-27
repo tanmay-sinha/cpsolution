@@ -1,0 +1,144 @@
+#include<bits/stdc++.h>
+#include <ext/pb_ds/assoc_container.hpp>
+using namespace std;
+using namespace __gnu_pbds;
+#define ld long double
+#define ull unsigned long long int
+#define ll long long int
+#define SPEED ios_base::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+#define mod 1000000007ll
+#define rep(i,L,R) for(ll i=L;i<R;i++)
+#define f(n) rep(i,0,n)
+#define DEBUG
+#ifdef DEBUG
+#define deb2(args...) {dbg,args; cerr<<endl;}
+#else
+#define deb2(args...)
+#endif
+struct debb{template<typename T> debb& operator,(const T &v){cerr<<v<<" ";return *this;}}dbg;
+#define deb1(args...) do {cerr << #args << " : "; dbg,args; cerr << "\n";} while(0)
+#define printa(a,L,R) rep(i,L,R) cout << a[i] <<' ';cout<<"\n";
+typedef tree<ll,null_type,less_equal<ll>,rb_tree_tag,tree_order_statistics_node_update> indexed_set;
+template<typename T>T gcd(T a,T b){if(b==0)return a;else return gcd(b,a%b);}
+template<typename T>T lcm(T a,T b){return a/gcd(a,b)*b;}
+ll power(ll x,ll y,ll p){ll res=1;x=x%p;while(y>0){if(y&1)res=((res%p)*(x%p))%p;y=y>>1;x=(x*x)%p;}return res;}
+ll pow1(ll x,ll y){ll res=1;while(y>0){if(y&1)res=(res*x);y=y>>1;x=x*x;}return res;}
+#define sq(X) ((X)*(X))
+#define PI 3.141592653589
+const ll INF = 1e18l+10,N = 2e5+10,MAX = 5000000;
+struct Ed
+{
+    ll w,i,a,b;
+    bool operator<(Ed& oth ) {return w < oth.w;}
+};
+
+vector<pair<ll,ll> > adj[N];
+vector<vector<ll> > par,m1;
+vector <Ed> edges;
+ll pa[N];
+bool h[N];
+ll n,m,W=0,root,ln;
+map<pair<ll,ll>,bool> mp;
+
+ll find_set(ll n){
+    if(pa[n]==n) return n;
+    return pa[n] = find_set(pa[n]);
+}
+
+void union_set(ll a,ll b){
+    a = find_set(a),b = find_set(b);
+    if(a!=b) pa[b] =a;
+}
+
+void mst()
+{
+    for(int i=1;i<=n;i++) pa[i]=i;
+    for(Ed e : edges)
+        if(find_set(e.a) != find_set(e.b)) {
+            W+= e.w;
+            union_set(e.a,e.b);
+            root = e.a;
+            h[e.i] = true;
+            mp[{min(e.a,e.b),max(e.a,e.b)}] = true;
+        }
+}
+
+ll lca(ll a,ll b){
+    if(pa[a]<pa[b]) swap(a,b);
+    ll an = -1;
+    
+    for(int i = ln-1;i>-1;i--)
+        if(par[a][i]!=-1 && pa[par[a][i]]>= pa[b])
+        {
+            an = max(an, m1[a][i]);
+            a = par[a][i];
+        }
+
+    if(a==b)return an;
+
+    for(int i = ln-1;i>=0;i--)
+    if(par[a][i]!=par[b][i]){
+        an = max({an,m1[a][i],m1[b][i]});
+        // deb1(par[a][i],par[b][i]);
+        if(par[a][i]!=-1) 
+        a = par[a][i];
+        if(par[b][i]!=-1)
+        b = par[b][i];
+        // deb1(a,b);
+    }
+    // cout<<"\n\n";
+    an = max({an,m1[a][0],m1[b][0]});
+    return an;
+}
+
+void dfs( ll v,ll p,ll e) {
+    //cout<<v<<"\n";
+    pa[v] = pa[p] +1;
+    par[v][0] = p;
+    m1[v][0] = e;
+    for(int i = 1;i<ln;i++)
+    if(par[v][i-1]!=-1){
+    par[v][i] = par[par[v][i-1]][i-1];
+    m1[v][i] = max(m1[par[v][i-1]][i-1],m1[v][i-1]);
+    }else break;
+
+    for(auto i : adj[v])
+    if(i.first!=p && (mp.find({min(v,i.first),max(v,i.first)})!=mp.end()))
+    dfs(i.first,v,i.second);
+}
+
+int main()
+{
+    SPEED
+    ll i,a,b,j,w;
+    cin>>n>>m;
+    for(i=0;i<m;i++) {
+        cin>>a>>b>>w;
+        edges.push_back({w,i,a,b});
+        adj[a].push_back({b,w}),adj[b].push_back({a,w});
+    }
+    sort(edges.begin(),edges.end());
+
+    mst();
+
+    memset(pa,0,sizeof(pa));
+    ln = 18;
+    par.assign(n+1, vector<ll>(ln+1,-1));
+    m1.assign(n+1, vector<ll>(ln+1,-1));
+
+    dfs(root,0,0);
+
+    vector <ll> ans(m+1);
+    for(Ed e : edges){
+        // deb1(e.i,h[e.i],e.a,e.b,e.w);
+        if(!h[e.i])
+        {
+            ll t = lca(e.a, e.b);
+            //deb1(t);
+            // deb1(t,e.w,e.a,e.b);
+            ans[e.i]=W-t+e.w;
+        }
+        else ans[e.i] = W;
+    }
+    for(ll i = 0;i<m;i++) cout<<ans[i]<<"\n";
+}
